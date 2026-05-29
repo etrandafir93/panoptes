@@ -12,7 +12,7 @@ Tasks are ordered for incremental delivery — each phase produces something run
 - [x] 0.4 `.editorconfig`, `.gitignore`, GitHub Actions CI workflow (build + test on push/PR, surefire artifact upload, `dorny/test-reporter` for Actions-UI rendering).
 - [x] 0.5 Module skeletons: each module has its own `pom.xml`, `src/main/kotlin` placeholder, `src/test/kotlin` Kotest hello-world spec.
 - [x] 0.6 Maven Wrapper (`mvnw`, `mvnw.cmd`, `mvnw.ps1`) committed so contributors don't need system Maven.
-- [ ] 0.7 README at repo root with one-paragraph project description and a `./mvnw verify` quickstart.
+- [x] 0.7 README at repo root with one-paragraph project description, modules table, placeholder quickstart, and `./mvnw verify` build instructions.
 
 ## Phase 1 — `test-tracer-core`
 
