@@ -28,7 +28,7 @@ Monorepo, single parent pom. GAV: `com.etrandafir.panoptes:test-tracer-*`.
 - **Test framework:** Kotest 5.x (`kotest-runner-junit5` + `kotest-assertions-core`). Not JUnit Jupiter directly.
 - **Build:** Maven Wrapper committed at repo root — always invoke as `./mvnw`. Pinned Maven 3.9.9.
 - **CI:** GitHub Actions runs `./mvnw verify` on push to `main` and on PRs. Surefire XML reports uploaded as `test-reports` artifact and rendered in the Actions UI via `dorny/test-reporter`.
-- **After every push, always start `gh run watch <id> --exit-status` in the background and notify the user when the run finishes** (pass/fail + the run URL). Do not move on silently after a push — the user wants to know the CI outcome.
+- **After every push, start `gh run watch <id> --exit-status` with `run_in_background: true`.** Never run the watch synchronously — it must not block the chat. Do not narrate it in replies (no "watching", no "will notify when done"). Only surface CI when the background notification fires, with a short pass/fail + run URL.
 - **Publishing:** Snapshots will be published to a public Maven repo on every push to `main` (target TBD — GitHub Packages or Sonatype OSSRH snapshots, see PLAN.md 7.6). Releases via Maven Central on tag.
 
 ## Open questions (resolve before/during build)
