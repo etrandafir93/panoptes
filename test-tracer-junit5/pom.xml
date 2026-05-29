@@ -60,6 +60,17 @@
             <artifactId>junit-platform-launcher</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.etrandafir.panoptes</groupId>
+            <artifactId>test-tracer-core</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
