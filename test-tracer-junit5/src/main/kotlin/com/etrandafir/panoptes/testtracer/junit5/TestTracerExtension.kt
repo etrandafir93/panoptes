@@ -29,6 +29,10 @@ import org.junit.jupiter.api.extension.ExtensionContext.Namespace
  * - Instance-level: `@RegisterExtension val ext = TestTracerExtension(otel)`
  *   for tests of this extension and for callers that don't want to use the
  *   global registry.
+ * - Auto-detected: registered via `META-INF/services` on the classpath.
+ *   Users must opt in by setting
+ *   `junit.jupiter.extensions.autodetection.enabled=true` (e.g. in
+ *   `junit-platform.properties`).
  */
 class TestTracerExtension(
     private val openTelemetry: OpenTelemetry,
