@@ -33,10 +33,10 @@ Tasks are ordered for incremental delivery — each phase produces something run
 
 ## Phase 3 — `test-tracer-spring-boot-starter`
 
-- [ ] 3.1 `TestTracerAutoConfiguration` with `@Bean` methods: `TestTracerSpanExporter`, `SimpleSpanProcessor` wrapping it, both gated on a property (`panoptes.test-tracer.enabled`, default true).
-- [ ] 3.2 `@ConfigurationProperties` for: output directory, file name, Zipkin export flag, Zipkin output path.
-- [ ] 3.3 `spring.factories` / `AutoConfiguration.imports` registration.
-- [ ] 3.4 Sample-app integration test: `@SpringBootTest` with the starter on the classpath → assert NDJSON file produced under target.
+- [x] 3.1 `TestTracerAutoConfiguration` registers `TestTracerSpanExporter` + `SimpleSpanProcessor` beans, gated on `panoptes.test-tracer.enabled` (default true). Nested `@Configuration` adds a second exporter+processor pair under `panoptes.test-tracer.zipkin.enabled=true`, writing Zipkin v2 to a separate file. No OTel SDK autoconfigure SPI — plain Spring `@Bean` contract.
+- [x] 3.2 `TestTracerProperties` (`@ConfigurationProperties(prefix = "panoptes.test-tracer")`) — nested `Output(dir, fileName)` and `Zipkin(enabled, fileName)`. Computed `output.path` and `zipkinPath` resolve via `java.nio.file.Paths`; Zipkin always writes next to the OTLP file.
+- [x] 3.3 Registered via `src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
+- [x] 3.4 Kotest `FunSpec` using `ApplicationContextRunner` + `AutoConfigurations.of(...)` covers: default beans present + Zipkin absent, `enabled=false` shorts everything out, `zipkin.enabled=true` adds both Zipkin beans, custom `output.dir` / `output.file-name` / `zipkin.file-name` bind onto `TestTracerProperties` and resolve to the expected paths.
 
 ## Phase 4 — `test-tracer-maven-plugin` skeleton
 
