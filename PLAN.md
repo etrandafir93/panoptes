@@ -17,7 +17,7 @@ Tasks are ordered for incremental delivery — each phase produces something run
 ## Phase 1 — `test-tracer-core`
 
 - [x] 1.1 Internal span model: `Span`, `SpanKind`, `SpanStatus`/`StatusCode`, `SpanEvent`, `Resource`, `InstrumentationScope`, `Attributes` (value class), `AttributeValue` sealed interface. Computed accessors on `Span`: `durationNanos`, `isRoot`, `hasError`.
-- [ ] 1.2 `NdjsonSpanWriter`: append-only writer to a configured path, synchronized for in-JVM parallel writes, flush on every write.
+- [x] 1.2 `NdjsonSpanWriter`: append-only, synchronized, flush-per-write, creates parent dir on demand. Tested for line termination, append-across-reopen, and 8-thread concurrent stress.
 - [ ] 1.3 `OtlpJsonSerializer`: span → single-line JSON.
 - [ ] 1.4 `TestTracerSpanExporter implements SpanExporter`: convert OTel `SpanData` → internal model → JSON → writer. `flush()` and `shutdown()` close the file handle.
 - [ ] 1.5 `ZipkinJsonSerializer` (opt-in): same model → Zipkin v2 array. Wired behind a config flag, written to a separate file.
