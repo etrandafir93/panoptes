@@ -25,6 +25,10 @@ Monorepo, single parent pom. GAV: `com.etrandafir.panoptes:test-tracer-*`.
 - **Multi-module Maven:** two-goal split. `record` runs per-module, `report` runs at the aggregator pom and globs all child NDJSONs into one merged HTML site.
 - **No-data path:** always render a diagnostic HTML page. Distinguish "tests skipped" from "tests ran but no spans." `failOnEmpty=true` opt-in.
 - **Renderer assets** (CSS, PlantUML jar, etc.) bundled in resources, read via classloader. PlantUML sequence diagrams pre-rendered to inline SVG at plugin time.
+- **Test framework:** Kotest 5.x (`kotest-runner-junit5` + `kotest-assertions-core`). Not JUnit Jupiter directly.
+- **Build:** Maven Wrapper committed at repo root — always invoke as `./mvnw`. Pinned Maven 3.9.9.
+- **CI:** GitHub Actions runs `./mvnw verify` on push to `main` and on PRs. Surefire XML reports uploaded as `test-reports` artifact and rendered in the Actions UI via `dorny/test-reporter`.
+- **Publishing:** Snapshots will be published to a public Maven repo on every push to `main` (target TBD — GitHub Packages or Sonatype OSSRH snapshots, see PLAN.md 7.6). Releases via Maven Central on tag.
 
 ## Open questions (resolve before/during build)
 

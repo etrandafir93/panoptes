@@ -6,11 +6,13 @@ Tasks are ordered for incremental delivery — each phase produces something run
 
 ## Phase 0 — Repo scaffolding
 
-- [x] 0.1 GAV group id locked: `com.etrandafir.panoptes`. (Note: requires DNS TXT verification of `etrandafir.com` for Maven Central publishing in Phase 7.6.)
-- [ ] 0.2 Parent `pom.xml` with `<packaging>pom</packaging>`, Kotlin + JVM 17 toolchain, four `<module>` entries.
-- [ ] 0.3 Shared `kotlin-maven-plugin` + dependency-management config in parent pom.
-- [ ] 0.4 `.editorconfig`, `.gitignore`, basic GitHub Actions CI workflow (build + test on push).
-- [ ] 0.5 Module skeletons committed (each module has its own `pom.xml`, empty `src/main/kotlin`, empty `src/test/kotlin`).
+- [x] 0.1 GAV group id locked: `com.etrandafir.panoptes`. (Note: requires DNS TXT verification of `etrandafir.com` for Maven Central publishing in Phase 7.6 — or use `io.github.etrandafir93` for free verification.)
+- [x] 0.2 Parent `pom.xml` with `<packaging>pom</packaging>`, Kotlin 2.1 + JVM 17 toolchain, four `<module>` entries.
+- [x] 0.3 Shared `kotlin-maven-plugin` + dependency-management config (Spring Boot 3.4, OTel 1.45, JUnit 5.11, Kotest 5.9 BOMs) in parent pom.
+- [x] 0.4 `.editorconfig`, `.gitignore`, GitHub Actions CI workflow (build + test on push/PR, surefire artifact upload, `dorny/test-reporter` for Actions-UI rendering).
+- [x] 0.5 Module skeletons: each module has its own `pom.xml`, `src/main/kotlin` placeholder, `src/test/kotlin` Kotest hello-world spec.
+- [x] 0.6 Maven Wrapper (`mvnw`, `mvnw.cmd`, `mvnw.ps1`) committed so contributors don't need system Maven.
+- [ ] 0.7 README at repo root with one-paragraph project description and a `./mvnw verify` quickstart.
 
 ## Phase 1 — `test-tracer-core`
 
@@ -68,9 +70,10 @@ Tasks are ordered for incremental delivery — each phase produces something run
 - [ ] 7.2 Distinguish `skipTests` from genuinely-empty in diagnostic page.
 - [ ] 7.3 OTel compat matrix CI job (current, current-1, current-2 SDK versions).
 - [ ] 7.4 README for each module with usage snippets.
-- [ ] 7.5 End-to-end fixture: a small multi-module Spring Boot project, full `mvn verify` produces a merged report.
-- [ ] 7.6 Maven Central publication setup (`gpg`, `sonatype-staging` profile, release workflow).
-- [ ] 7.7 `1.0.0` tag + release.
+- [ ] 7.5 End-to-end fixture: a small multi-module Spring Boot project, full `./mvnw verify` produces a merged report.
+- [ ] 7.6 **Publish snapshots to a public Maven repo on every push to `main`.** Decide target: GitHub Packages (zero setup, `https://maven.pkg.github.com/etrandafir93/panoptes`) or Sonatype OSSRH snapshots (requires GPG + namespace verification). Wire as a separate `publish.yml` workflow gated on `branches: [main]`.
+- [ ] 7.7 Maven Central release publication setup (`gpg`, `sonatype-staging` profile, release workflow triggered on tag).
+- [ ] 7.8 `1.0.0` tag + release.
 
 ---
 
