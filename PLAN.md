@@ -16,7 +16,7 @@ Tasks are ordered for incremental delivery — each phase produces something run
 
 ## Phase 1 — `test-tracer-core`
 
-- [ ] 1.1 Define internal span model (sealed/data classes mirroring OTLP fields you actually use: traceId, spanId, parentId, name, kind, startNanos, endNanos, status, attributes, events, resource).
+- [x] 1.1 Internal span model: `Span`, `SpanKind`, `SpanStatus`/`StatusCode`, `SpanEvent`, `Resource`, `InstrumentationScope`, `Attributes` (value class), `AttributeValue` sealed interface. Computed accessors on `Span`: `durationNanos`, `isRoot`, `hasError`.
 - [ ] 1.2 `NdjsonSpanWriter`: append-only writer to a configured path, synchronized for in-JVM parallel writes, flush on every write.
 - [ ] 1.3 `OtlpJsonSerializer`: span → single-line JSON.
 - [ ] 1.4 `TestTracerSpanExporter implements SpanExporter`: convert OTel `SpanData` → internal model → JSON → writer. `flush()` and `shutdown()` close the file handle.
