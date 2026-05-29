@@ -18,7 +18,7 @@ Tasks are ordered for incremental delivery — each phase produces something run
 
 - [x] 1.1 Internal span model: `Span`, `SpanKind`, `SpanStatus`/`StatusCode`, `SpanEvent`, `Resource`, `InstrumentationScope`, `Attributes` (value class), `AttributeValue` sealed interface. Computed accessors on `Span`: `durationNanos`, `isRoot`, `hasError`.
 - [x] 1.2 `NdjsonSpanWriter`: append-only, synchronized, flush-per-write, creates parent dir on demand. Tested for line termination, append-across-reopen, and 8-thread concurrent stress.
-- [ ] 1.3 `OtlpJsonSerializer`: span → single-line JSON.
+- [x] 1.3 `OtlpJsonSerializer`: span → single-line OTLP-shaped JSON. Flat per-span (no `resourceSpans` envelope), int64 nano fields quoted per OTLP/JSON. Manual JSON emission (no Jackson on user classpath); Jackson in test scope only for parse-back validation.
 - [ ] 1.4 `TestTracerSpanExporter implements SpanExporter`: convert OTel `SpanData` → internal model → JSON → writer. `flush()` and `shutdown()` close the file handle.
 - [ ] 1.5 `ZipkinJsonSerializer` (opt-in): same model → Zipkin v2 array. Wired behind a config flag, written to a separate file.
 - [ ] 1.6 Unit tests: synthetic `SpanData` → exporter → assert NDJSON content; round-trip through a deserializer.
