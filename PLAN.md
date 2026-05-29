@@ -25,7 +25,7 @@ Tasks are ordered for incremental delivery — each phase produces something run
 
 ## Phase 2 — `test-tracer-junit5`
 
-- [ ] 2.1 `TestTracerExtension implements BeforeEachCallback, AfterEachCallback, TestWatcher` (or appropriate combination).
+- [x] 2.1 `TestTracerExtension implements BeforeEachCallback, AfterEachCallback`. Opens `test:<Class>#<method>` span on beforeEach (makes it current OTel context), stamps `test.class`/`test.method`/`test.status`/failure attributes + records exception event on afterEach, closes scope + ends span. No-arg constructor uses `GlobalOpenTelemetry`; secondary constructor takes an explicit `OpenTelemetry` for testing. Integration-tested via JUnit Platform Launcher running sample classes; status-mapping covered by Kotest data-driven `withData`.
 - [ ] 2.2 On `beforeEach`: start root span named `test:${className}#${methodName}`, attach to OTel `Context.current()`, store the `Scope` in the JUnit `ExtensionContext` store.
 - [ ] 2.3 On `afterEach`: stamp `test.status` (`passed`/`failed`/`skipped`) and `test.failure.message` if any, end span, close scope.
 - [ ] 2.4 Optionally register via `META-INF/services` for automatic extension on the classpath (so users don't need `@ExtendWith`).
