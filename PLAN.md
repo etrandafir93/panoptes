@@ -20,7 +20,7 @@ Tasks are ordered for incremental delivery — each phase produces something run
 - [x] 1.2 `NdjsonSpanWriter`: append-only, synchronized, flush-per-write, creates parent dir on demand. Tested for line termination, append-across-reopen, and 8-thread concurrent stress.
 - [x] 1.3 `OtlpJsonSerializer`: span → single-line OTLP-shaped JSON. Flat per-span (no `resourceSpans` envelope), int64 nano fields quoted per OTLP/JSON. Manual JSON emission (no Jackson on user classpath); Jackson in test scope only for parse-back validation.
 - [x] 1.4 `TestTracerSpanExporter implements SpanExporter`: `SpanDataMapper` translates OTel `SpanData` → internal `Span` (kind/status/attributes/events/resource/scope), exporter writes one NDJSON line per span via the serializer + writer. `flush()` is a no-op (already flush-per-write). `shutdown()` closes the writer. Tested end-to-end with `TestSpanData` fixtures.
-- [ ] 1.5 `ZipkinJsonSerializer` (opt-in): same model → Zipkin v2 array. Wired behind a config flag, written to a separate file.
+- [x] 1.5 `ZipkinJsonSerializer`: span → single line of Zipkin v2 JSON. Extracted a shared `SpanSerializer` interface + internal `JsonOutput` escape helpers. `TestTracerSpanExporter` is now generic over the serializer, so Phase 3's Spring starter can register a second exporter for Zipkin output when the flag is on. Lossy-by-design Zipkin tag flattening (non-strings stringified, lists comma-joined); ERROR status → `error` + `otel.status_code` tags. Output is NDJSON; document `jq -s . file.ndjson` to convert to Zipkin's array shape.
 - [ ] 1.6 Unit tests: synthetic `SpanData` → exporter → assert NDJSON content; round-trip through a deserializer.
 
 ## Phase 2 — `test-tracer-junit5`
