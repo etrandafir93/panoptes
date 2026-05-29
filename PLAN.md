@@ -26,10 +26,10 @@ Tasks are ordered for incremental delivery — each phase produces something run
 ## Phase 2 — `test-tracer-junit5`
 
 - [x] 2.1 `TestTracerExtension implements BeforeEachCallback, AfterEachCallback`. Opens `test:<Class>#<method>` span on beforeEach (makes it current OTel context), stamps `test.class`/`test.method`/`test.status`/failure attributes + records exception event on afterEach, closes scope + ends span. No-arg constructor uses `GlobalOpenTelemetry`; secondary constructor takes an explicit `OpenTelemetry` for testing. Integration-tested via JUnit Platform Launcher running sample classes; status-mapping covered by Kotest data-driven `withData`.
-- [ ] 2.2 On `beforeEach`: start root span named `test:${className}#${methodName}`, attach to OTel `Context.current()`, store the `Scope` in the JUnit `ExtensionContext` store.
-- [ ] 2.3 On `afterEach`: stamp `test.status` (`passed`/`failed`/`skipped`) and `test.failure.message` if any, end span, close scope.
+- [x] 2.2 `beforeEach` opens the root span, makes it the current OTel context, and stashes span + Scope on `ExtensionContext.Store`. (Folded into 2.1.)
+- [x] 2.3 `afterEach` stamps `test.class`/`test.method`/`test.status`, plus `test.failure.message`/`test.failure.class` + exception span event on failure, sets status OK/ERROR from `executionException`, closes scope and ends span. (Folded into 2.1.)
 - [x] 2.4 Registered `TestTracerExtension` via `META-INF/services/org.junit.jupiter.api.extension.Extension` so it auto-loads when `junit.jupiter.extensions.autodetection.enabled=true`.
-- [ ] 2.5 Integration test: extension + in-process OTel SDK + Phase-1 exporter → run two fake tests → assert two root spans with correct attributes in the NDJSON file.
+- [x] 2.5 Cross-module integration test (`ExporterIntegrationTest`): real `TestTracerSpanExporter` writing NDJSON to a temp file, two sample JUnit tests run via the Launcher, asserts both root spans land in the file with correct names, status codes, and failure attribution.
 
 ## Phase 3 — `test-tracer-spring-boot-starter`
 
