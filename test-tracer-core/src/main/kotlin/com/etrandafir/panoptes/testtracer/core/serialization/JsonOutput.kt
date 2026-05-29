@@ -13,15 +13,13 @@ internal fun StringBuilder.appendStringField(key: String, value: String) {
 internal fun StringBuilder.appendJsonString(s: String) {
     append('"')
     for (c in s) {
-        when (c) {
-            '"' -> append("\\\"")
-            '\\' -> append("\\\\")
-            '\n' -> append("\\n")
-            '\r' -> append("\\r")
-            '\t' -> append("\\t")
-            '\b' -> append("\\b")
-            '' -> append("\\f")
-            in ' '..'' -> append("\\u%04x".format(c.code))
+        when {
+            c == '"' -> append("\\\"")
+            c == '\\' -> append("\\\\")
+            c == '\n' -> append("\\n")
+            c == '\r' -> append("\\r")
+            c == '\t' -> append("\\t")
+            c.code < 0x20 -> append("\\u%04x".format(c.code))
             else -> append(c)
         }
     }
