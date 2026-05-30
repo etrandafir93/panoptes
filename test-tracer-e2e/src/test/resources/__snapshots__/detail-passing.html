@@ -1,0 +1,114 @@
+<header><div class="container"><h1>panoptes test-tracer report</h1><div class="subtitle">Test detail</div></div></header>
+<div class="container">
+<a class="back-link" href="index.html">← Back to index</a>
+<div class="detail-header">
+  <h2>MyTest#passingTest</h2>
+  <div>
+    <span class="badge badge-ok">PASS</span>
+  </div>
+  <div class="detail-meta">
+    <span>Duration: <strong>4000.0ms</strong></span>
+    <span>Spans: <strong>3</strong></span>
+    <span>Trace ID: <code>aaaa000000000000000000000000aaaa</code></span>
+  </div>
+</div>
+<details open class="view-section">
+  <summary class="view-toggle">Waterfall</summary>
+<div class="waterfall-container">
+  <div class="waterfall-header">
+    <div class="col-name">Span</div>
+    <div class="col-bar">Timeline (total: 4000.0ms)</div>
+  </div>
+  <div class="waterfall-row depth-0">
+    <div class="col-name">test:MyTest#passingTest</div>
+    <div class="col-bar">
+      <div class="span-bar-wrap">
+        <div class="span-bar span-bar-ok" style="left:0.0%;width:100.0%" title="test:MyTest#passingTest
+Duration: 4000.0ms
+Status: OK
+Span ID: bbbb000000000001"></div>
+        <div class="span-tooltip">test:MyTest#passingTest
+Duration: 4000.0ms
+Status: OK
+Span ID: bbbb000000000001</div>
+      </div>
+    </div>
+  </div>
+  <div class="waterfall-row depth-0" style="padding:.2rem .75rem;background:#f8fafc;">
+    <div style="grid-column:1/-1;padding:.1rem .75rem .4rem;">
+      <details>
+        <summary>test:MyTest#passingTest — attributes &amp; events</summary>
+        <table class="attr-table"><tbody>
+          <tr><td>test.class</td><td>MyTest</td></tr>
+          <tr><td>test.method</td><td>passingTest</td></tr>
+          <tr><td>test.status</td><td>PASSED</td></tr>
+        </tbody></table>
+      </details>
+    </div>
+  </div>
+  <div class="waterfall-row depth-1">
+    <div class="col-name">http:GET /api/users</div>
+    <div class="col-bar">
+      <div class="span-bar-wrap">
+        <div class="span-bar span-bar-ok" style="left:12.5%;width:75.0%" title="http:GET /api/users
+Duration: 3000.0ms
+Status: OK
+Span ID: bbbb000000000002
+Parent: bbbb000000000001"></div>
+        <div class="span-tooltip">http:GET /api/users
+Duration: 3000.0ms
+Status: OK
+Span ID: bbbb000000000002
+Parent: bbbb000000000001</div>
+      </div>
+    </div>
+  </div>
+  <div class="waterfall-row depth-1" style="padding:.2rem .75rem;background:#f8fafc;">
+    <div style="grid-column:1/-1;padding:.1rem .75rem .4rem;">
+      <details>
+        <summary>http:GET /api/users — attributes &amp; events</summary>
+        <table class="attr-table"><tbody>
+          <tr><td>http.method</td><td>GET</td></tr>
+          <tr><td>http.url</td><td>/api/users</td></tr>
+          <tr><td>http.status_code</td><td>200</td></tr>
+        </tbody></table>
+      </details>
+    </div>
+  </div>
+  <div class="waterfall-row depth-2">
+    <div class="col-name">db:SELECT users</div>
+    <div class="col-bar">
+      <div class="span-bar-wrap">
+        <div class="span-bar span-bar-ok" style="left:25.0%;width:50.0%" title="db:SELECT users
+Duration: 2000.0ms
+Status: OK
+Span ID: bbbb000000000003
+Parent: bbbb000000000002"></div>
+        <div class="span-tooltip">db:SELECT users
+Duration: 2000.0ms
+Status: OK
+Span ID: bbbb000000000003
+Parent: bbbb000000000002</div>
+      </div>
+    </div>
+  </div>
+  <div class="waterfall-row depth-2" style="padding:.2rem .75rem;background:#f8fafc;">
+    <div style="grid-column:1/-1;padding:.1rem .75rem .4rem;">
+      <details>
+        <summary>db:SELECT users — attributes &amp; events</summary>
+        <table class="attr-table"><tbody>
+          <tr><td>db.system</td><td>postgresql</td></tr>
+          <tr><td>db.statement</td><td>SELECT * FROM users WHERE id = ?</td></tr>
+        </tbody></table>
+      </details>
+    </div>
+  </div>
+</div>
+</details>
+<details class="view-section">
+  <summary class="view-toggle">Sequence diagram</summary>
+<div class="seq-diagram">
+<svg>[sequence diagram]</svg>
+</div>
+</details>
+</div>

@@ -17,6 +17,7 @@
         <module>test-tracer-junit5</module>
         <module>test-tracer-spring-boot-starter</module>
         <module>test-tracer-maven-plugin</module>
+        <module>test-tracer-e2e</module>
     </modules>
 
     <properties>

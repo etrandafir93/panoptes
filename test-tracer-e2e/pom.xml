@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.etrandafir.panoptes</groupId>
+        <artifactId>test-tracer-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>test-tracer-e2e</artifactId>
+
+    <description>
+        End-to-end tests for the panoptes test-tracer pipeline:
+        OTel spans → TestTracerSpanExporter → NDJSON → SpanAggregator → HTML renderers.
+        Uses selfie for snapshot testing of the rendered HTML output.
+    </description>
+
+    <dependencies>
+        <!-- OTel SDK: satisfies the 'provided' scope in test-tracer-core -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-sdk</artifactId>
+        </dependency>
+
+        <!-- The exporter under test -->
+        <dependency>
+            <groupId>com.etrandafir.panoptes</groupId>
+            <artifactId>test-tracer-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- The aggregator + renderer under test (renderer classes are inside the plugin jar) -->
+        <dependency>
+            <groupId>com.etrandafir.panoptes</groupId>
+            <artifactId>test-tracer-maven-plugin</artifactId>
+            <version>${project.version}</version>
+            <!-- Exclude provided Maven API deps so they don't pollute the test classpath -->
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.maven</groupId>
+                    <artifactId>maven-plugin-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.maven</groupId>
+                    <artifactId>maven-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.maven.plugin-tools</groupId>
+                    <artifactId>maven-plugin-annotations</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- Test framework -->
+        <dependency>
+            <groupId>io.kotest</groupId>
+            <artifactId>kotest-runner-junit5-jvm</artifactId>
+            <version>${kotest.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.kotest</groupId>
+            <artifactId>kotest-assertions-core-jvm</artifactId>
+            <version>${kotest.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!--
+          Snapshot testing is handled by SnapshotHelper (see test sources).
+          selfie (com.diffplug.selfie) would be the right library here but requires
+          Kotest 6.x (selfie 3.x) while this project uses Kotest 5.9.x.
+          When Kotest is upgraded to 6.x, replace SnapshotHelper with selfie-runner-kotest.
+        -->
+    </dependencies>
+
+    <build>
+        <testSourceDirectory>src/test/kotlin</testSourceDirectory>
+        <plugins>
+            <plugin>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-maven-plugin</artifactId>
+                <executions>
+                    <!-- No main sources; only test-compile needed -->
+                    <execution>
+                        <id>compile</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <!-- Pass through update.snapshots flag: mvn test -Dupdate.snapshots=true -->
+                        <update.snapshots>${update.snapshots}</update.snapshots>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

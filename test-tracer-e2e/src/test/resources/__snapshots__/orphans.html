@@ -1,0 +1,19 @@
+<header><div class="container"><h1>panoptes test-tracer report</h1><div class="subtitle">Orphan spans</div></div></header>
+<div class="container">
+<a class="back-link" href="index.html">← Back to index</a>
+<div class="orphan-note">These spans belong to traces where no root span with <code>test.method</code> attribute was found. They may come from background threads or spans started outside the JUnit 5 extension context.</div>
+<table>
+<thead>
+<tr>
+  <th>Span Name</th>
+  <th>Trace ID</th>
+  <th>Span ID</th>
+  <th>Duration</th>
+  <th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr><td>background:cleanup-task</td><td><code>cccc000000000000000000000000cccc</code></td><td><code>dddd000000000001</code></td><td>500.0ms</td><td>UNSET</td></tr>
+</tbody>
+</table>
+</div>
