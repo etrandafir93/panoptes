@@ -1,12 +1,13 @@
 package com.etrandafir.panoptes.testtracer.core.export
 
 import com.etrandafir.panoptes.testtracer.core.io.NdjsonSpanWriter
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.etrandafir.panoptes.testtracer.core.model.AttributeValue
+import com.etrandafir.panoptes.testtracer.core.serialization.OtlpSpanDeserializer
+import io.kotest.assertions.json.shouldContainJsonKeyValue
+import io.kotest.assertions.json.shouldNotContainJsonKey
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.engine.spec.tempdir
 import io.kotest.matchers.collections.shouldContainExactly
-import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
@@ -25,8 +26,6 @@ import kotlin.io.path.readText
 
 class TestTracerSpanExporterTest : StringSpec({
 
-    val mapper = ObjectMapper()
-
     "exports each span as one NDJSON line" {
         val file = tempdir().toPath().resolve("spans.ndjson")
         val exporter = TestTracerSpanExporter(NdjsonSpanWriter(file))
@@ -36,7 +35,7 @@ class TestTracerSpanExporterTest : StringSpec({
         exporter.shutdown().isSuccess shouldBe true
 
         val lines = file.readText().lines().filter { it.isNotEmpty() }
-        lines.map { mapper.readTree(it)["name"].asText() } shouldContainExactly listOf("first", "second")
+        lines.map { OtlpSpanDeserializer.deserialize(it).name } shouldContainExactly listOf("first", "second")
     }
 
     "root span omits parentSpanId" {
@@ -44,8 +43,7 @@ class TestTracerSpanExporterTest : StringSpec({
         TestTracerSpanExporter(NdjsonSpanWriter(file)).use {
             it.export(listOf(aSpan())).isSuccess shouldBe true
         }
-
-        mapper.readTree(file.readText().trim())["parentSpanId"].shouldBeNull()
+        file.readText().trim().shouldNotContainJsonKey("$.parentSpanId")
     }
 
     "child span carries parentSpanId from parent context" {
@@ -59,11 +57,10 @@ class TestTracerSpanExporterTest : StringSpec({
         TestTracerSpanExporter(NdjsonSpanWriter(file)).use {
             it.export(listOf(aSpan(parentSpanContext = parent))).isSuccess shouldBe true
         }
-
-        mapper.readTree(file.readText().trim())["parentSpanId"].asText() shouldBe "1112131415161718"
+        file.readText().trim().shouldContainJsonKeyValue("$.parentSpanId", "1112131415161718")
     }
 
-    "maps span kind, status, attributes, events, resource, and scope" {
+    "OTel SpanData fields map onto the internal span model end-to-end" {
         val file = tempdir().toPath().resolve("spans.ndjson")
         val span = aSpan(
             name = "GET /users",
@@ -90,17 +87,18 @@ class TestTracerSpanExporterTest : StringSpec({
             it.export(listOf(span)).isSuccess shouldBe true
         }
 
-        val node = mapper.readTree(file.readText().trim())
-        node["kind"].asText() shouldBe "SPAN_KIND_SERVER"
-        node["status"]["code"].asText() shouldBe "STATUS_CODE_ERROR"
-        node["status"]["message"].asText() shouldBe "downstream timeout"
-        val attrs = node["attributes"].toAttributeMap()
-        attrs.getValue("http.method")["stringValue"].asText() shouldBe "GET"
-        attrs.getValue("http.status_code")["intValue"].asText() shouldBe "500"
-        node["events"][0]["name"].asText() shouldBe "exception"
-        node["resource"]["attributes"][0]["key"].asText() shouldBe "service.name"
-        node["scope"]["name"].asText() shouldBe "io.opentelemetry.servlet"
-        node["scope"]["version"].asText() shouldBe "2.1.0"
+        val parsed = OtlpSpanDeserializer.deserialize(file.readText().trim())
+        parsed.name shouldBe "GET /users"
+        parsed.kind.name shouldBe "SERVER"
+        parsed.status.code.name shouldBe "ERROR"
+        parsed.status.description shouldBe "downstream timeout"
+        parsed.attributes["http.method"] shouldBe AttributeValue.StringValue("GET")
+        parsed.attributes["http.status_code"] shouldBe AttributeValue.LongValue(500L)
+        parsed.events.single().name shouldBe "exception"
+        parsed.events.single().attributes["exception.type"] shouldBe AttributeValue.StringValue("TimeoutException")
+        parsed.resource.attributes["service.name"] shouldBe AttributeValue.StringValue("checkout")
+        parsed.scope.name shouldBe "io.opentelemetry.servlet"
+        parsed.scope.version shouldBe "2.1.0"
     }
 
     "flush succeeds without writing" {
@@ -117,9 +115,6 @@ class TestTracerSpanExporterTest : StringSpec({
         exporter.export(listOf(aSpan())).isSuccess shouldBe false
     }
 })
-
-private fun JsonNode.toAttributeMap(): Map<String, JsonNode> =
-    (0 until size()).associate { i -> get(i)["key"].asText() to get(i)["value"] }
 
 private fun aSpan(
     name: String = "test-span",

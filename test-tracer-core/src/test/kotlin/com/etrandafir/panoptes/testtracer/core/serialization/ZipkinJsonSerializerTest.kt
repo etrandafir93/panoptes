@@ -12,24 +12,22 @@ import com.etrandafir.panoptes.testtracer.core.model.Span
 import com.etrandafir.panoptes.testtracer.core.model.SpanEvent
 import com.etrandafir.panoptes.testtracer.core.model.SpanKind
 import com.etrandafir.panoptes.testtracer.core.model.SpanStatus
-import com.fasterxml.jackson.databind.ObjectMapper
-import io.kotest.core.spec.style.StringSpec
-import io.kotest.matchers.nulls.shouldBeNull
-import io.kotest.matchers.shouldBe
+import io.kotest.assertions.json.shouldContainJsonKeyValue
+import io.kotest.assertions.json.shouldEqualSpecifiedJson
+import io.kotest.assertions.json.shouldNotContainJsonKey
+import io.kotest.core.spec.style.FunSpec
+import io.kotest.datatest.withData
 import io.kotest.matchers.string.shouldNotContain
 
-class ZipkinJsonSerializerTest : StringSpec({
+class ZipkinJsonSerializerTest : FunSpec({
 
     val serializer = ZipkinJsonSerializer()
-    val mapper = ObjectMapper()
 
-    "output is single-line valid JSON" {
-        val line = serializer.serialize(aSpan())
-        line.shouldNotContain("\n")
-        mapper.readTree(line)
+    test("output is a single line") {
+        serializer.serialize(aSpan()).shouldNotContain("\n")
     }
 
-    "core span fields use Zipkin v2 names and microsecond timestamps" {
+    test("core span fields use Zipkin v2 names and microsecond timestamps") {
         val line = serializer.serialize(
             aSpan(
                 traceId = "0102030405060708090a0b0c0d0e0f10",
@@ -41,39 +39,40 @@ class ZipkinJsonSerializerTest : StringSpec({
                 endEpochNanos = 1_700_000_000_500_000_000,
             ),
         )
-        val node = mapper.readTree(line)
-        node["traceId"].asText() shouldBe "0102030405060708090a0b0c0d0e0f10"
-        node["id"].asText() shouldBe "1112131415161718"
-        node["parentId"].asText() shouldBe "2122232425262728"
-        node["name"].asText() shouldBe "GET /users"
-        node["kind"].asText() shouldBe "SERVER"
-        node["timestamp"].asLong() shouldBe 1_700_000_000_000_000L
-        node["duration"].asLong() shouldBe 500_000L
-    }
-
-    "parentId omitted for root spans" {
-        val line = serializer.serialize(aSpan(parentSpanId = null))
-        mapper.readTree(line)["parentId"].shouldBeNull()
-    }
-
-    "kind omitted entirely for INTERNAL spans" {
-        val line = serializer.serialize(aSpan(kind = SpanKind.INTERNAL))
-        mapper.readTree(line)["kind"].shouldBeNull()
-    }
-
-    "localEndpoint.serviceName comes from resource attribute" {
-        val line = serializer.serialize(
-            aSpan(resource = Resource(Attributes.of("service.name" to StringValue("checkout")))),
+        line.shouldEqualSpecifiedJson(
+            """
+            {
+              "traceId": "0102030405060708090a0b0c0d0e0f10",
+              "id": "1112131415161718",
+              "parentId": "2122232425262728",
+              "name": "GET /users",
+              "kind": "SERVER",
+              "timestamp": 1700000000000000,
+              "duration": 500000
+            }
+            """.trimIndent(),
         )
-        mapper.readTree(line)["localEndpoint"]["serviceName"].asText() shouldBe "checkout"
     }
 
-    "localEndpoint.serviceName defaults to 'unknown' when missing" {
-        val line = serializer.serialize(aSpan(resource = Resource.EMPTY))
-        mapper.readTree(line)["localEndpoint"]["serviceName"].asText() shouldBe "unknown"
+    test("parentId omitted for root spans") {
+        serializer.serialize(aSpan(parentSpanId = null)).shouldNotContainJsonKey("$.parentId")
     }
 
-    "events become annotations (no attributes)" {
+    test("kind omitted entirely for INTERNAL spans") {
+        serializer.serialize(aSpan(kind = SpanKind.INTERNAL)).shouldNotContainJsonKey("$.kind")
+    }
+
+    test("localEndpoint.serviceName comes from resource attribute") {
+        serializer.serialize(aSpan(resource = Resource(Attributes.of("service.name" to StringValue("checkout")))))
+            .shouldContainJsonKeyValue("$.localEndpoint.serviceName", "checkout")
+    }
+
+    test("localEndpoint.serviceName defaults to 'unknown' when missing") {
+        serializer.serialize(aSpan(resource = Resource.EMPTY))
+            .shouldContainJsonKeyValue("$.localEndpoint.serviceName", "unknown")
+    }
+
+    test("events become annotations with microsecond timestamps and drop attributes") {
         val line = serializer.serialize(
             aSpan(
                 events = listOf(
@@ -82,15 +81,19 @@ class ZipkinJsonSerializerTest : StringSpec({
                 ),
             ),
         )
-        val annotations = mapper.readTree(line)["annotations"]
-        annotations.size() shouldBe 2
-        annotations[0]["timestamp"].asLong() shouldBe 1_000L
-        annotations[0]["value"].asText() shouldBe "exception"
-        annotations[0]["type"].shouldBeNull() // event attributes dropped
-        annotations[1]["value"].asText() shouldBe "log"
+        line.shouldEqualSpecifiedJson(
+            """
+            {
+              "annotations": [
+                { "timestamp": 1000, "value": "exception" },
+                { "timestamp": 2000, "value": "log" }
+              ]
+            }
+            """.trimIndent(),
+        )
     }
 
-    "attributes stringified into flat tags" {
+    test("attributes stringified into flat tags") {
         val line = serializer.serialize(
             aSpan(
                 attributes = Attributes.of(
@@ -102,41 +105,50 @@ class ZipkinJsonSerializerTest : StringSpec({
                 ),
             ),
         )
-        val tags = mapper.readTree(line)["tags"]
-        tags["http.method"].asText() shouldBe "GET"
-        tags["http.status_code"].asText() shouldBe "200"
-        tags["http.cached"].asText() shouldBe "true"
-        tags["http.duration_ms"].asText() shouldBe "12.5"
-        tags["http.peer_ids"].asText() shouldBe "1,2,3"
+        line.shouldEqualSpecifiedJson(
+            """
+            {
+              "tags": {
+                "http.method": "GET",
+                "http.status_code": "200",
+                "http.cached": "true",
+                "http.duration_ms": "12.5",
+                "http.peer_ids": "1,2,3"
+              }
+            }
+            """.trimIndent(),
+        )
     }
 
-    "ERROR status adds error and otel.status_code tags" {
-        val line = serializer.serialize(aSpan(status = SpanStatus.error("downstream timeout")))
-        val tags = mapper.readTree(line)["tags"]
-        tags["error"].asText() shouldBe "downstream timeout"
-        tags["otel.status_code"].asText() shouldBe "ERROR"
+    context("status mapping") {
+        withData(
+            nameFn = { it.label },
+            StatusCase("ERROR adds error and otel.status_code", SpanStatus.error("downstream timeout"), expectedError = "downstream timeout", expectedCode = "ERROR"),
+            StatusCase("OK adds otel.status_code only", SpanStatus.OK, expectedError = null, expectedCode = "OK"),
+            StatusCase("UNSET emits neither tag", SpanStatus.UNSET, expectedError = null, expectedCode = null),
+        ) { case ->
+            val line = serializer.serialize(aSpan(status = case.status))
+            if (case.expectedError == null) line.shouldNotContainJsonKey("$.tags.error")
+            else line.shouldContainJsonKeyValue("$.tags.error", case.expectedError)
+
+            val codePath = "$.tags['otel.status_code']"
+            if (case.expectedCode == null) line.shouldNotContainJsonKey(codePath)
+            else line.shouldContainJsonKeyValue(codePath, case.expectedCode)
+        }
     }
 
-    "OK status adds otel.status_code but no error tag" {
-        val line = serializer.serialize(aSpan(status = SpanStatus.OK))
-        val tags = mapper.readTree(line)["tags"]
-        tags["error"].shouldBeNull()
-        tags["otel.status_code"].asText() shouldBe "OK"
-    }
-
-    "UNSET status emits neither tag" {
-        val line = serializer.serialize(aSpan(status = SpanStatus.UNSET))
-        val tags = mapper.readTree(line)["tags"]
-        tags["error"].shouldBeNull()
-        tags["otel.status_code"].shouldBeNull()
-    }
-
-    "string escaping covers quotes, newlines, and control chars" {
+    test("string escaping covers quotes, newlines, and control chars") {
         val tricky = "line1\nline2\twith \"quotes\""
-        val line = serializer.serialize(aSpan(name = tricky))
-        mapper.readTree(line)["name"].asText() shouldBe tricky
+        serializer.serialize(aSpan(name = tricky)).shouldContainJsonKeyValue("$.name", tricky)
     }
 })
+
+private data class StatusCase(
+    val label: String,
+    val status: SpanStatus,
+    val expectedError: String?,
+    val expectedCode: String?,
+)
 
 private fun aSpan(
     traceId: String = "00000000000000000000000000000001",
