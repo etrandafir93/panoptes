@@ -35,13 +35,11 @@ import org.junit.jupiter.api.extension.ExtensionContext.Namespace
  *   `junit-platform.properties`).
  */
 class TestTracerExtension(
-    private val openTelemetry: OpenTelemetry,
+    private val openTelemetry: OpenTelemetry? = null,
 ) : BeforeEachCallback, AfterEachCallback {
 
-    constructor() : this(GlobalOpenTelemetry.get())
-
     override fun beforeEach(context: ExtensionContext) {
-        val tracer = openTelemetry.getTracer(INSTRUMENTATION_SCOPE)
+        val tracer = (openTelemetry ?: GlobalOpenTelemetry.get()).getTracer(INSTRUMENTATION_SCOPE)
         val name = "test:${context.requiredTestClass.simpleName}#${context.requiredTestMethod.name}"
         val span = tracer.spanBuilder(name).startSpan()
         val scope = span.makeCurrent()

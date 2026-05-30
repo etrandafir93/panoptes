@@ -13,92 +13,119 @@
     <artifactId>test-tracer-e2e</artifactId>
 
     <description>
-        End-to-end tests for the panoptes test-tracer pipeline:
-        OTel spans → TestTracerSpanExporter → NDJSON → SpanAggregator → HTML renderers.
-        Uses selfie for snapshot testing of the rendered HTML output.
+        End-to-end sample project demonstrating the panoptes test-tracer pipeline.
+        A plain Java + Spring Boot application that uses Micrometer Tracing with the
+        OTel bridge. Tests are instrumented by test-tracer-junit5 and the spring-boot
+        starter wires the NDJSON exporter. After tests run, test-tracer-maven-plugin
+        generates a static HTML report in target/test-tracer/site/.
     </description>
 
     <dependencies>
-        <!-- OTel SDK: satisfies the 'provided' scope in test-tracer-core -->
+        <!-- Spring Boot -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Actuator brings in Micrometer + tracing autoconfiguration (Tracer bean) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- Micrometer Tracing OTel bridge — bridges Micrometer Tracer → OTel SDK -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+        </dependency>
+
+        <!-- OTel SDK — satisfies the 'provided' scope in test-tracer-core and
+             supplies the SdkTracerProvider that Spring Boot autoconfigures -->
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-sdk</artifactId>
         </dependency>
 
-        <!-- The exporter under test -->
+        <!-- Panoptes: wires the NDJSON exporter as a Spring bean -->
         <dependency>
             <groupId>com.etrandafir.panoptes</groupId>
-            <artifactId>test-tracer-core</artifactId>
+            <artifactId>test-tracer-spring-boot-starter</artifactId>
             <version>${project.version}</version>
         </dependency>
 
-        <!-- The aggregator + renderer under test (renderer classes are inside the plugin jar) -->
+        <!-- Panoptes: JUnit 5 extension that opens a root span per test -->
         <dependency>
             <groupId>com.etrandafir.panoptes</groupId>
-            <artifactId>test-tracer-maven-plugin</artifactId>
+            <artifactId>test-tracer-junit5</artifactId>
             <version>${project.version}</version>
-            <!-- Exclude provided Maven API deps so they don't pollute the test classpath -->
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.maven</groupId>
-                    <artifactId>maven-plugin-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.maven</groupId>
-                    <artifactId>maven-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.maven.plugin-tools</groupId>
-                    <artifactId>maven-plugin-annotations</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <!-- Test framework -->
-        <dependency>
-            <groupId>io.kotest</groupId>
-            <artifactId>kotest-runner-junit5-jvm</artifactId>
-            <version>${kotest.version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>io.kotest</groupId>
-            <artifactId>kotest-assertions-core-jvm</artifactId>
-            <version>${kotest.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <!--
-          Snapshot testing is handled by SnapshotHelper (see test sources).
-          selfie (com.diffplug.selfie) would be the right library here but requires
-          Kotest 6.x (selfie 3.x) while this project uses Kotest 5.9.x.
-          When Kotest is upgraded to 6.x, replace SnapshotHelper with selfie-runner-kotest.
-        -->
     </dependencies>
 
     <build>
-        <testSourceDirectory>src/test/kotlin</testSourceDirectory>
+        <!-- Pure Java module — disable the Kotlin compile phases from the parent -->
+        <sourceDirectory>src/main/java</sourceDirectory>
+        <testSourceDirectory>src/test/java</testSourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
                 <executions>
-                    <!-- No main sources; only test-compile needed -->
                     <execution>
                         <id>compile</id>
                         <phase>none</phase>
                     </execution>
+                    <execution>
+                        <id>test-compile</id>
+                        <phase>none</phase>
+                    </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <phase>compile</phase>
+                        <goals><goal>compile</goal></goals>
+                    </execution>
+                    <execution>
+                        <id>default-testCompile</id>
+                        <phase>test-compile</phase>
+                        <goals><goal>testCompile</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <systemPropertyVariables>
-                        <!-- Pass through update.snapshots flag: mvn test -Dupdate.snapshots=true -->
-                        <update.snapshots>${update.snapshots}</update.snapshots>
-                    </systemPropertyVariables>
+                    <!-- Keep going even if some tests fail — the report goal needs
+                         to run in verify phase so we can see the failures in the HTML -->
+                    <testFailureIgnore>true</testFailureIgnore>
                 </configuration>
+            </plugin>
+
+            <!-- Generate the HTML report after tests have produced spans.ndjson -->
+            <plugin>
+                <groupId>com.etrandafir.panoptes</groupId>
+                <artifactId>test-tracer-maven-plugin</artifactId>
+                <version>${project.version}</version>
+                <executions>
+                    <execution>
+                        <id>panoptes-report</id>
+                        <goals><goal>report</goal></goals>
+                        <phase>verify</phase>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
