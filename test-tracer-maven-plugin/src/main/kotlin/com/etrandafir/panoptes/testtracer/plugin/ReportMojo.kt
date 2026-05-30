@@ -6,6 +6,7 @@ import com.etrandafir.panoptes.testtracer.plugin.renderer.OrphanPageRenderer
 import com.etrandafir.panoptes.testtracer.plugin.renderer.SpanAggregator
 import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.plugin.MojoExecutionException
+import org.apache.maven.plugin.MojoFailureException
 import org.apache.maven.plugins.annotations.LifecyclePhase
 import org.apache.maven.plugins.annotations.Mojo
 import org.apache.maven.plugins.annotations.Parameter
@@ -70,17 +71,25 @@ class ReportMojo : AbstractMojo() {
         val matches = findNdjsonFiles(root, ndjsonPattern)
         log.info("test-tracer:report — found ${matches.size} NDJSON file(s)")
 
-        if (matches.isEmpty() && failOnEmpty) {
-            throw MojoExecutionException(
-                "test-tracer:report found no NDJSON files matching $ndjsonPattern under $root (failOnEmpty=true)"
-            )
-        }
-
         if (!outputDirectory.exists() && !outputDirectory.mkdirs()) {
             throw MojoExecutionException("Failed to create output directory: $outputDirectory")
         }
 
-        val result = SpanAggregator.aggregate(matches)
+        val testsSkipped = project.properties.getProperty("skipTests") == "true" ||
+            project.properties.getProperty("maven.test.skip") == "true"
+        if (testsSkipped) {
+            log.info("test-tracer:report — tests were skipped (skipTests / maven.test.skip)")
+        }
+
+        val result = SpanAggregator.aggregate(matches).copy(testsSkipped = testsSkipped)
+
+        if (failOnEmpty && !testsSkipped && result.tests.isEmpty() && result.orphans.spans.isEmpty()) {
+            val reason = if (result.noFilesFound)
+                "no NDJSON files matched $ndjsonPattern under $root"
+            else
+                "NDJSON files were found but contained no span lines"
+            throw MojoFailureException("test-tracer:report — $reason (failOnEmpty=true)")
+        }
         log.info(
             "test-tracer:report — aggregated ${result.tests.size} test(s), " +
                 "${result.orphans.spans.size} orphan span(s)"

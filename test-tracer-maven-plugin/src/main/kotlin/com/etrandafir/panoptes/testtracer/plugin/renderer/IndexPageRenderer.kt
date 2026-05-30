@@ -31,11 +31,17 @@ object IndexPageRenderer {
             append("\n")
 
             when {
+                result.testsSkipped -> appendDiagnostic(
+                    this,
+                    "Tests were skipped",
+                    "The build was run with <code>skipTests</code> or <code>maven.test.skip</code> — " +
+                        "no tests executed, so no spans were recorded.",
+                )
                 result.noFilesFound -> appendDiagnostic(
                     this,
                     "No spans recorded",
-                    "No NDJSON files were found. Either tests were skipped, or the " +
-                        "<code>test-tracer-spring-boot-starter</code> is not on the test classpath.",
+                    "No NDJSON files were found. Check that the " +
+                        "<code>test-tracer-spring-boot-starter</code> is on the test classpath.",
                 )
                 result.tests.isEmpty() && result.orphans.spans.isEmpty() -> appendDiagnostic(
                     this,

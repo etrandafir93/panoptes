@@ -1,5 +1,7 @@
 package com.etrandafir.panoptes.testtracer.plugin.renderer
 
+import com.etrandafir.panoptes.testtracer.plugin.renderer.model.AggregationResult
+import com.etrandafir.panoptes.testtracer.plugin.renderer.model.OrphanGroup
 import com.etrandafir.panoptes.testtracer.plugin.renderer.model.SpanData
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldHaveSize
@@ -204,6 +206,40 @@ class RendererTest : FunSpec({
     }
 
     // ── OrphanPageRenderer ──────────────────────────────────────────────────────
+
+    // ── 7.1 failOnEmpty / 7.2 testsSkipped diagnostic ─────────────────────────
+
+    test("IndexPageRenderer shows 'Tests were skipped' diagnostic when testsSkipped=true") {
+        val result = SpanAggregator.aggregate(emptyList()).copy(testsSkipped = true)
+        val html = IndexPageRenderer.render(result)
+
+        html shouldContain "Tests were skipped"
+        html shouldContain "skipTests"
+        html shouldNotContain "No spans recorded"
+        html shouldNotContain "<table"
+    }
+
+    test("IndexPageRenderer shows 'No spans recorded' when noFilesFound and not skipped") {
+        val result = SpanAggregator.aggregate(emptyList())
+        val html = IndexPageRenderer.render(result)
+
+        html shouldContain "No spans recorded"
+        html shouldNotContain "Tests were skipped"
+    }
+
+    test("IndexPageRenderer shows 'Tests ran but no spans' when files found but empty") {
+        val result = AggregationResult(
+            tests = emptyList(),
+            traces = emptyMap(),
+            orphans = OrphanGroup(emptyList()),
+            noFilesFound = false,
+            filesFoundButEmpty = true,
+        )
+        val html = IndexPageRenderer.render(result)
+
+        html shouldContain "Tests ran but no spans were exported"
+        html shouldNotContain "Tests were skipped"
+    }
 
     // ── SequenceDiagramGenerator ────────────────────────────────────────────────
 

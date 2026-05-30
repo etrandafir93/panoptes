@@ -63,4 +63,5 @@ data class AggregationResult(
     val orphans: OrphanGroup,
     val noFilesFound: Boolean = false,
     val filesFoundButEmpty: Boolean = false,
+    val testsSkipped: Boolean = false,
 )
