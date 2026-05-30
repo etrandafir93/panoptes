@@ -14,3 +14,5 @@ target/
 Thumbs.db
 
 .mvn/wrapper/maven-wrapper.jar
+
+.claude/settings.local.json
