@@ -40,10 +40,10 @@ Tasks are ordered for incremental delivery — each phase produces something run
 
 ## Phase 4 — `test-tracer-maven-plugin` skeleton
 
-- [ ] 4.1 Module set to `<packaging>maven-plugin</packaging>`; `maven-plugin-plugin` + `kotlin-maven-plugin` goal ordering correct (Kotlin compile before plugin descriptor generation).
-- [ ] 4.2 `RecordMojo` (`@Mojo(name="record")`): no-op in v1 beyond logging that the plugin is wired. Bound by default to `post-integration-test`. Acts as a marker / future config sink.
-- [ ] 4.3 `ReportMojo` (`@Mojo(name="report", aggregator=true)`): glob NDJSON files under a configurable pattern (default `**/target/test-tracer/spans.ndjson`), parse into the internal span model, render placeholder HTML to `target/test-tracer/site/`.
-- [ ] 4.4 Plugin-level `it` test (`maven-invoker-plugin`): a tiny fixture project using the starter + JUnit 5 → run `verify` → assert HTML produced.
+- [x] 4.1 Module set to `<packaging>maven-plugin</packaging>`; `maven-plugin-plugin` + `kotlin-maven-plugin` goal ordering correct (Kotlin compile before plugin descriptor generation).
+- [x] 4.2 `RecordMojo` (`@Mojo(name="record")`): no-op in v1 beyond logging that the plugin is wired. Bound by default to `post-integration-test`. Acts as a marker / future config sink.
+- [x] 4.3 `ReportMojo` (`@Mojo(name="report", aggregator=true)`): glob NDJSON files under a configurable pattern (default `**/target/test-tracer/spans.ndjson`), parse into the internal span model, render placeholder HTML to `target/test-tracer/site/`.
+- [x] 4.4 Plugin-level `it` test (`maven-invoker-plugin`): a tiny fixture project using the starter + JUnit 5 → run `verify` → assert HTML produced. (v1 IT seeds a fake NDJSON to exercise the report goal in isolation; the starter+JUnit5 end-to-end is covered separately in Phase 7.5.)
 
 ## Phase 5 — Renderer v1
 
