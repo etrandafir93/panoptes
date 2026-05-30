@@ -37,6 +37,13 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- Jackson for NDJSON parsing in the renderer (no Jackson on user classpath via core) -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>io.kotest</groupId>
             <artifactId>kotest-runner-junit5-jvm</artifactId>

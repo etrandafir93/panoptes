@@ -1,5 +1,9 @@
 package com.etrandafir.panoptes.testtracer.plugin
 
+import com.etrandafir.panoptes.testtracer.plugin.renderer.DetailPageRenderer
+import com.etrandafir.panoptes.testtracer.plugin.renderer.IndexPageRenderer
+import com.etrandafir.panoptes.testtracer.plugin.renderer.OrphanPageRenderer
+import com.etrandafir.panoptes.testtracer.plugin.renderer.SpanAggregator
 import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.plugin.MojoExecutionException
 import org.apache.maven.plugins.annotations.LifecyclePhase
@@ -15,8 +19,12 @@ import kotlin.io.path.invariantSeparatorsPathString
 
 /**
  * Aggregator goal: walks the multi-module reactor root, finds every per-module NDJSON file matching
- * [ndjsonPattern], and renders a single HTML site under [outputDirectory]. Phase 4 ships a
- * placeholder renderer (counts + file list). Phase 5 swaps in the real renderer.
+ * [ndjsonPattern], aggregates all spans, and renders a static HTML site under [outputDirectory].
+ *
+ * The site contains:
+ * - `index.html` — test table (failed first, then by duration desc)
+ * - `<traceId>.html` — per-test waterfall detail page
+ * - `orphans.html` — spans with no test-attributed root (rendered only when orphans exist)
  */
 @Mojo(
     name = "report",
@@ -63,65 +71,60 @@ class ReportMojo : AbstractMojo() {
         log.info("test-tracer:report — found ${matches.size} NDJSON file(s)")
 
         if (matches.isEmpty() && failOnEmpty) {
-            throw MojoExecutionException("test-tracer:report found no NDJSON files matching $ndjsonPattern under $root (failOnEmpty=true)")
+            throw MojoExecutionException(
+                "test-tracer:report found no NDJSON files matching $ndjsonPattern under $root (failOnEmpty=true)"
+            )
         }
 
         if (!outputDirectory.exists() && !outputDirectory.mkdirs()) {
             throw MojoExecutionException("Failed to create output directory: $outputDirectory")
         }
 
-        val totalLines = matches.sumOf { runCatching { Files.lines(it).use { lines -> lines.count() } }.getOrDefault(0L) }
+        val result = SpanAggregator.aggregate(matches)
+        log.info(
+            "test-tracer:report — aggregated ${result.tests.size} test(s), " +
+                "${result.orphans.spans.size} orphan span(s)"
+        )
 
-        val indexHtml = renderPlaceholderHtml(root, matches, totalLines)
-        val indexFile = File(outputDirectory, "index.html")
-        indexFile.writeText(indexHtml, Charsets.UTF_8)
-        log.info("test-tracer:report — wrote ${indexFile.absolutePath}")
+        // index.html
+        val indexHtml = IndexPageRenderer.render(result)
+        File(outputDirectory, "index.html").writeText(indexHtml, Charsets.UTF_8)
+        log.info("test-tracer:report — wrote index.html")
+
+        // per-test detail pages
+        for (entry in result.tests) {
+            val tree = result.traces[entry.traceId] ?: continue
+            val html = DetailPageRenderer.render(entry, tree)
+            File(outputDirectory, "${entry.traceId}.html").writeText(html, Charsets.UTF_8)
+        }
+        if (result.tests.isNotEmpty()) {
+            log.info("test-tracer:report — wrote ${result.tests.size} detail page(s)")
+        }
+
+        // orphans.html (only when orphans exist)
+        if (result.orphans.spans.isNotEmpty()) {
+            val html = OrphanPageRenderer.render(result.orphans)
+            File(outputDirectory, "orphans.html").writeText(html, Charsets.UTF_8)
+            log.info("test-tracer:report — wrote orphans.html (${result.orphans.spans.size} orphan span(s))")
+        }
     }
 
     private fun findNdjsonFiles(root: Path, glob: String): List<Path> {
         if (!Files.exists(root)) return emptyList()
+        // Java's PathMatcher with glob:** does not match zero-depth paths on all JVMs,
+        // so we also build a matcher without the leading **/ prefix for direct-child matches.
         val matcher = FileSystems.getDefault().getPathMatcher("glob:$glob")
+        // Strip a leading "**/" so "target/..." also matches when there's no parent directory.
+        val strippedGlob = if (glob.startsWith("**/")) glob.removePrefix("**/") else null
+        val strippedMatcher = strippedGlob?.let { FileSystems.getDefault().getPathMatcher("glob:$it") }
         Files.walk(root).use { stream ->
             return stream
                 .filter { Files.isRegularFile(it) }
-                .filter { matcher.matches(root.relativize(it)) }
+                .filter { path ->
+                    val rel = root.relativize(path)
+                    matcher.matches(rel) || strippedMatcher?.matches(rel) == true
+                }
                 .collect(Collectors.toList())
         }
     }
-
-    private fun renderPlaceholderHtml(root: Path, files: List<Path>, totalLines: Long): String {
-        val rows = if (files.isEmpty()) {
-            "<tr><td colspan=\"2\"><em>No NDJSON files matched the pattern.</em></td></tr>"
-        } else {
-            files.joinToString("\n") { p ->
-                val rel = root.relativize(p).invariantSeparatorsPathString
-                val size = runCatching { Files.size(p) }.getOrDefault(0L)
-                "<tr><td><code>${escape(rel)}</code></td><td>$size B</td></tr>"
-            }
-        }
-        return """<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8"/>
-<title>test-tracer report (placeholder)</title>
-<style>body{font-family:sans-serif;max-width:960px;margin:2rem auto;padding:0 1rem}
-table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:.5rem;text-align:left}</style>
-</head>
-<body>
-<h1>test-tracer report</h1>
-<p><strong>Phase 4 placeholder.</strong> The real renderer arrives in Phase 5.</p>
-<p>Reactor root: <code>${escape(root.invariantSeparatorsPathString)}</code></p>
-<p>NDJSON files: <strong>${files.size}</strong> — total lines (spans): <strong>$totalLines</strong></p>
-<table><thead><tr><th>File</th><th>Size</th></tr></thead><tbody>
-$rows
-</tbody></table>
-</body>
-</html>
-"""
-    }
-
-    private fun escape(s: String): String = s
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
 }

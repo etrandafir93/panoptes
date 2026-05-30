@@ -47,15 +47,15 @@ Tasks are ordered for incremental delivery — each phase produces something run
 
 ## Phase 5 — Renderer v1
 
-- [ ] 5.1 **Resolve open IA question** (failed-first vs duration-sorted). Sketch the landing page, decide, document in `CLAUDE.md`.
-- [ ] 5.2 View model: sealed classes for `TestEntry`, `TraceTree`, `SpanNode`, `OrphanGroup`.
-- [ ] 5.3 Aggregation: group spans by `traceId`, build tree, attach to `TestEntry` via root-span attributes. Spans without a `test:` root → orphan bucket.
-- [ ] 5.4 Index page: test table (name, status, duration, span count), failed pinned to top, sortable client-side (vanilla JS or no JS — decide based on the IA outcome).
-- [ ] 5.5 Per-test detail page: header (test name, status, total duration, failure message), waterfall view.
-- [ ] 5.6 Waterfall renderer: SSR HTML/CSS, span bars positioned by time, tooltip on hover, click → side panel with attributes/events/exception.
-- [ ] 5.7 Bundle CSS/assets under `src/main/resources/.../assets/`, load via classloader.
-- [ ] 5.8 Diagnostic empty-state page (no NDJSON found / file empty / skipTests detected).
-- [ ] 5.9 Orphan bucket page.
+- [x] 5.1 **Resolve open IA question** (failed-first vs duration-sorted). Decision: STATUS_CODE_ERROR first, then by durationNanos desc within each status group. Pure SSR HTML, no JS. Documented in `CLAUDE.md`.
+- [x] 5.2 View model: `SpanData`, `RawAttribute`, `SpanEvent`, `TestEntry`, `TraceTree`, `OrphanGroup`, `AggregationResult` in `renderer/model/RendererModel.kt`.
+- [x] 5.3 Aggregation: `SpanAggregator` groups spans by traceId, builds recursive `TraceTree`, identifies test entries via `test.method` attribute on root span. Orphan bucket for traces with no test root.
+- [x] 5.4 Index page: `IndexPageRenderer` renders test table (name, status badge, duration, span count), ERROR first then duration desc, links to `<traceId>.html`. Diagnostic empty-state for no-files and no-spans cases.
+- [x] 5.5 Per-test detail page: `DetailPageRenderer` renders header (name, status, duration, failure message) + waterfall.
+- [x] 5.6 Waterfall renderer: SSR HTML/CSS, span bars with `left`/`width` percentages, `<details><summary>` for attribute expand (no JS), CSS hover tooltip on span bars.
+- [x] 5.7 CSS bundled at `src/main/resources/.../assets/report.css`, loaded via `getResourceAsStream`, inlined in `<style>` block.
+- [x] 5.8 Diagnostic empty-state: `noFilesFound` → "No spans recorded"; `filesFoundButEmpty` → "Tests ran but no spans exported".
+- [x] 5.9 Orphan bucket page: `OrphanPageRenderer` renders table of orphan spans (name, traceId, spanId, duration, status), links back to index.
 
 ## Phase 6 — Sequence-diagram view
 
