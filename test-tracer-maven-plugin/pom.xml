@@ -11,8 +11,7 @@
     </parent>
 
     <artifactId>test-tracer-maven-plugin</artifactId>
-    <!-- Phase 0: jar packaging while no @Mojo classes exist yet. Switch to maven-plugin in Phase 4. -->
-    <packaging>jar</packaging>
+    <packaging>maven-plugin</packaging>
 
     <dependencies>
         <dependency>
@@ -37,11 +36,6 @@
             <version>${maven-plugin-annotations.version}</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>io.kotest</groupId>
@@ -64,6 +58,61 @@
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-plugin-plugin</artifactId>
+                <version>3.15.1</version>
+                <configuration>
+                    <goalPrefix>test-tracer</goalPrefix>
+                </configuration>
+                <executions>
+                    <!--
+                      Re-bind descriptor generation to process-classes so it runs AFTER
+                      kotlin-maven-plugin's `compile` execution (also bound to process-sources →
+                      compile phase). The default binding is in process-classes already, but we
+                      pin it explicitly to make the ordering obvious and stable.
+                    -->
+                    <execution>
+                        <id>default-descriptor</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>descriptor</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>help-goal</id>
+                        <goals>
+                            <goal>helpmojo</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-invoker-plugin</artifactId>
+                <version>3.9.0</version>
+                <configuration>
+                    <projectsDirectory>src/it</projectsDirectory>
+                    <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
+                    <localRepositoryPath>${project.build.directory}/local-repo</localRepositoryPath>
+                    <settingsFile>src/it/settings.xml</settingsFile>
+                    <postBuildHookScript>verify</postBuildHookScript>
+                    <streamLogsOnFailures>true</streamLogsOnFailures>
+                    <goals>
+                        <goal>verify</goal>
+                    </goals>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>integration-test</id>
+                        <goals>
+                            <goal>install</goal>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
