@@ -44,6 +44,13 @@
             <version>${jackson.version}</version>
         </dependency>
 
+        <!-- PlantUML bundled in plugin only — not on user classpath -->
+        <dependency>
+            <groupId>net.sourceforge.plantuml</groupId>
+            <artifactId>plantuml-lgpl</artifactId>
+            <version>1.2024.8</version>
+        </dependency>
+
         <dependency>
             <groupId>io.kotest</groupId>
             <artifactId>kotest-runner-junit5-jvm</artifactId>

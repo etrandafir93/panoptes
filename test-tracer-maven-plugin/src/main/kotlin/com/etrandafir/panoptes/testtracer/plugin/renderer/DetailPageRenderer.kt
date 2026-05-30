@@ -29,7 +29,14 @@ object DetailPageRenderer {
             append("<div class=\"container\">\n")
             append("<a class=\"back-link\" href=\"index.html\">← Back to index</a>\n")
             appendDetailHeader(this, entry)
+            append("<details open class=\"view-section\">\n")
+            append("  <summary class=\"view-toggle\">Waterfall</summary>\n")
             appendWaterfall(this, tree)
+            append("</details>\n")
+            append("<details class=\"view-section\">\n")
+            append("  <summary class=\"view-toggle\">Sequence diagram</summary>\n")
+            appendSequenceDiagram(this, tree)
+            append("</details>\n")
             append("</div>\n")
         }
         return pageHtml(entry.name, css, body)
@@ -138,6 +145,14 @@ object DetailPageRenderer {
         for (child in node.children) {
             renderTreeRows(sb, child, traceStart, traceDuration, depth + 1)
         }
+    }
+
+    private fun appendSequenceDiagram(sb: StringBuilder, tree: TraceTree) {
+        val puml = SequenceDiagramGenerator.generate(tree)
+        val svg = SequenceDiagramRenderer.renderToSvg(puml)
+        sb.append("<div class=\"seq-diagram\">\n")
+        sb.append(svg)
+        sb.append("\n</div>\n")
     }
 
     private fun buildTooltip(span: SpanData): String = buildString {

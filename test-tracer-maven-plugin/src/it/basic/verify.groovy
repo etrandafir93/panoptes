@@ -1,4 +1,4 @@
-// Phase 5 IT: assert the `report` aggregator produced a full HTML site.
+// Phase 5/6 IT: assert the `report` aggregator produced a full HTML site.
 // Two seeded spans: one test root (MyTest#myMethod, OK) and one orphan span.
 
 File site = new File(basedir, "target/test-tracer/site")
@@ -18,6 +18,8 @@ assert detail.isFile(): "expected detail page for trace aaaa00000000000000000000
 String detailHtml = detail.text
 assert detailHtml.contains("MyTest#myMethod"): "detail page should show test name; was:\n${detailHtml}"
 assert detailHtml.contains("waterfall"): "detail page should contain waterfall; was:\n${detailHtml}"
+assert detailHtml.contains("Sequence diagram"): "detail page should contain sequence diagram section; was:\n${detailHtml}"
+assert detailHtml.contains("<svg"): "detail page should contain an inline SVG sequence diagram; was:\n${detailHtml}"
 
 // Orphan page
 File orphans = new File(site, "orphans.html")

@@ -1,5 +1,6 @@
 package com.etrandafir.panoptes.testtracer.plugin.renderer
 
+import com.etrandafir.panoptes.testtracer.plugin.renderer.model.SpanData
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.doubles.plusOrMinus
@@ -200,6 +201,88 @@ class RendererTest : FunSpec({
             traceDurationNanos = 1000L,
         )
         width shouldBe (50.0 plusOrMinus 0.001)
+    }
+
+    // ── OrphanPageRenderer ──────────────────────────────────────────────────────
+
+    // ── SequenceDiagramGenerator ────────────────────────────────────────────────
+
+    test("SequenceDiagramGenerator lifeline prefers service.name attribute") {
+        val span = SpanData(
+            traceId = "t1", spanId = "s1", parentSpanId = null,
+            name = "http:GET /users",
+            startEpochNanos = 0L, endEpochNanos = 1L,
+            statusCode = "STATUS_CODE_OK", statusMessage = null,
+            attributes = mapOf("service.name" to "my-service"),
+            rawAttributes = emptyList(), events = emptyList(),
+        )
+        SequenceDiagramGenerator.lifeline(span) shouldBe "my-service"
+    }
+
+    test("SequenceDiagramGenerator lifeline falls back to span-name prefix before ':'") {
+        val span = SpanData(
+            traceId = "t1", spanId = "s1", parentSpanId = null,
+            name = "http:GET /users",
+            startEpochNanos = 0L, endEpochNanos = 1L,
+            statusCode = "STATUS_CODE_OK", statusMessage = null,
+            attributes = emptyMap(), rawAttributes = emptyList(), events = emptyList(),
+        )
+        SequenceDiagramGenerator.lifeline(span) shouldBe "http"
+    }
+
+    test("SequenceDiagramGenerator lifeline falls back to full name when no colon") {
+        val span = SpanData(
+            traceId = "t1", spanId = "s1", parentSpanId = null,
+            name = "background-task",
+            startEpochNanos = 0L, endEpochNanos = 1L,
+            statusCode = "STATUS_CODE_UNSET", statusMessage = null,
+            attributes = emptyMap(), rawAttributes = emptyList(), events = emptyList(),
+        )
+        SequenceDiagramGenerator.lifeline(span) shouldBe "background-task"
+    }
+
+    test("SequenceDiagramGenerator generates @startuml/@enduml markers") {
+        val lines = listOf(testSpanLine(traceId = "t1", spanId = "root", testMethod = "m"))
+        val result = SpanAggregator.aggregateLines(lines)
+        val tree = result.traces["t1"]!!
+        val puml = SequenceDiagramGenerator.generate(tree)
+
+        puml shouldContain "@startuml"
+        puml shouldContain "@enduml"
+    }
+
+    test("SequenceDiagramGenerator emits arrow from parent to child lifeline") {
+        val rootLine = testSpanLine(traceId = "t1", spanId = "root", name = "test:MyTest#m", testMethod = "m")
+        val childLine = testSpanLine(
+            traceId = "t1", spanId = "child", parentSpanId = "root",
+            name = "http:GET /api", testClass = null, testMethod = null,
+        )
+        val result = SpanAggregator.aggregateLines(listOf(rootLine, childLine))
+        val tree = result.traces["t1"]!!
+        val puml = SequenceDiagramGenerator.generate(tree)
+
+        puml shouldContain "test -> http"
+        puml shouldContain "activate http"
+        puml shouldContain "http --> test"
+        puml shouldContain "deactivate http"
+    }
+
+    test("DetailPageRenderer HTML contains both waterfall and sequence-diagram sections") {
+        val rootLine = testSpanLine(traceId = "t1", spanId = "root", testMethod = "m")
+        val childLine = testSpanLine(
+            traceId = "t1", spanId = "child", parentSpanId = "root",
+            name = "http:GET /api", testClass = null, testMethod = null,
+        )
+        val result = SpanAggregator.aggregateLines(listOf(rootLine, childLine))
+        val entry = result.tests[0]
+        val tree = result.traces["t1"]!!
+        val html = DetailPageRenderer.render(entry, tree)
+
+        html shouldContain "Waterfall"
+        html shouldContain "Sequence diagram"
+        html shouldContain "waterfall-container"
+        html shouldContain "seq-diagram"
+        html shouldContain "<svg"
     }
 
     // ── OrphanPageRenderer ──────────────────────────────────────────────────────

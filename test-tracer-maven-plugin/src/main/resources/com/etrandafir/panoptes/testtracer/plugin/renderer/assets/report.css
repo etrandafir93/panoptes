@@ -215,6 +215,49 @@ details[open] summary::before { content: "▼ "; }
 .attr-table td:first-child { color: #64748b; font-weight: 500; white-space: nowrap; }
 .attr-table td:last-child { word-break: break-all; }
 
+/* ── view-mode toggle (waterfall / sequence diagram) ── */
+.view-section {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    overflow: hidden;
+}
+.view-toggle {
+    font-size: .9rem;
+    font-weight: 600;
+    color: #334155;
+    padding: .75rem 1rem;
+    background: #f1f5f9;
+    border-bottom: 1px solid #e2e8f0;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+}
+.view-toggle::-webkit-details-marker { display: none; }
+.view-toggle::before { content: "▶ "; font-size: .7rem; color: #64748b; }
+details[open] > .view-toggle::before { content: "▼ "; }
+.view-section .waterfall-container {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    margin-bottom: 0;
+}
+.seq-diagram {
+    padding: 1rem;
+    overflow-x: auto;
+    text-align: center;
+}
+.seq-diagram svg { max-width: 100%; height: auto; }
+.seq-error {
+    padding: 1rem;
+    color: #b91c1c;
+    background: #fef2f2;
+    border-radius: 4px;
+    font-size: .85rem;
+}
+
 /* ── orphan page ── */
 .orphan-note {
     background: #fffbeb;
