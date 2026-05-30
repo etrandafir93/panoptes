@@ -10,8 +10,8 @@
     <packaging>pom</packaging>
 
     <description>
-        Phase 4 IT fixture for test-tracer-maven-plugin. Pre-populates a fake NDJSON file under
-        target/test-tracer/ then runs the `report` aggregator goal and asserts the HTML landed.
+        Phase 5 IT fixture for test-tracer-maven-plugin. Pre-populates NDJSON files with realistic
+        OTLP-shaped spans (one test trace + one orphan) then runs `report` and asserts the HTML site.
     </description>
 
     <properties>
@@ -20,23 +20,6 @@
 
     <build>
         <plugins>
-            <!--
-              Seed a fake spans.ndjson before `report` runs so we don't need the JUnit 5 extension
-              and the Spring Boot starter wired here — those are exercised in their own modules'
-              unit/integration tests. This IT proves the plugin glob-matches and renders.
-            -->
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.6.0</version>
-                <executions>
-                    <execution>
-                        <id>noop</id>
-                        <phase>validate</phase>
-                        <goals><goal>parse-version</goal></goals>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
@@ -49,8 +32,13 @@
                         <configuration>
                             <target>
                                 <mkdir dir="${project.build.directory}/test-tracer"/>
-                                <echo file="${project.build.directory}/test-tracer/spans.ndjson"
-                                      message='{"traceId":"abc","spanId":"def","name":"seed"}${line.separator}'/>
+                                <!--
+                                  Two NDJSON lines:
+                                  1) Root span with test.method attribute → renders as test entry
+                                  2) Orphan span (no parentSpanId, different traceId, no test.method)
+                                -->
+                                <echo file="${project.build.directory}/test-tracer/spans.ndjson" append="false"
+                                      message='{"traceId":"aaaa0000000000000000000000000001","spanId":"bbbb000000000001","name":"test:MyTest#myMethod","kind":"SPAN_KIND_INTERNAL","startTimeUnixNano":"1000000000","endTimeUnixNano":"2000000000","status":{"code":"STATUS_CODE_OK"},"attributes":[{"key":"test.class","value":{"stringValue":"MyTest"}},{"key":"test.method","value":{"stringValue":"myMethod"}},{"key":"test.status","value":{"stringValue":"PASSED"}}],"events":[],"resource":{"attributes":[]},"scope":{"name":"test-tracer"}}&#10;{"traceId":"cccc0000000000000000000000000002","spanId":"dddd000000000002","name":"orphan-span","kind":"SPAN_KIND_INTERNAL","startTimeUnixNano":"3000000000","endTimeUnixNano":"3500000000","status":{"code":"STATUS_CODE_UNSET"},"attributes":[],"events":[],"resource":{"attributes":[]},"scope":{"name":"test-tracer"}}&#10;'/>
                             </target>
                         </configuration>
                     </execution>

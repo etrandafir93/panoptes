@@ -33,7 +33,7 @@ Monorepo, single parent pom. GAV: `com.etrandafir.panoptes:test-tracer-*`.
 
 ## Open questions (resolve before/during build)
 
-- **Information architecture.** Use case is flaky-test diagnosis but the original sketch was traces-sorted-by-duration. Recommendation: failed tests first, duration as secondary sort; per-test detail page with view-mode switch.
+- ~~**Information architecture.** Use case is flaky-test diagnosis but the original sketch was traces-sorted-by-duration. Recommendation: failed tests first, duration as secondary sort; per-test detail page with view-mode switch.~~ **Resolved (Phase 5.1):** Index table sorts STATUS_CODE_ERROR first, then by `durationNanos` descending within each status group. Each row links to a per-test detail page (`<traceId>.html`). No client-side JS — pure SSR HTML.
 - **View modes per test.** Spans waterfall ✓. Sequence diagram (PlantUML SVG) likely ✓. C4 view recommended cut from v1 — span data doesn't carry container/component info reliably.
 
 ## Scope boundaries
